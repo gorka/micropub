@@ -1,37 +1,6 @@
+@import "./social_buttons";
+@import "./logo";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@layer components {
-  .logo {
-    width: 9em;
-
-    @apply flex text-3xl lg:text-5xl;
-  }
-
-  .logo:hover .char:nth-child(1) {
-    transform: translateX(4em);
-  }
-
-  .logo:hover .char:nth-child(2) {
-    transform: translateX(2em);
-  }
-
-  .logo:hover .char:nth-child(4) {
-    transform: translateX(-2em);
-  }
-
-  .logo:hover .char:nth-child(5) {
-    transform: translateX(-4em);
-  }
-
-  .logo:hover .char:nth-child(1n+6) {
-    opacity: 0;
-  }
-
-  .logo .char {
-    width: 1em;
-    text-align: center;
-    transition: transform 1s ease;
-  }
-}
