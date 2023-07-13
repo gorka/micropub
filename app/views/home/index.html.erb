@@ -10,11 +10,14 @@
   <div class="char">v</div>
 </div>
 
-<div class="inline-flex space-x-3">
-  <%= link_to "https://www.linkedin.com/in/gorkapitarch/", class: "social-btn bg-[#0A66C2]" do
+<div class="-m-2 inline-flex flex-wrap">
+  <%= link_to "https://www.linkedin.com/in/gorkapitarch/", class: "m-2 social-btn bg-[#0A66C2]" do
     svg("linkedin", class: "fill-white w-5 h-5 mr-3") + "Gorka Pitarch"
   end %>
-  <%= link_to "https://twitter.com/akrogdev", class: "social-btn bg-[#1D9BF0]" do
+  <%= link_to "https://twitter.com/akrogdev", class: "m-2 social-btn bg-[#1D9BF0]" do
     svg("twitter", class: "fill-white w-5 h-5 mr-3") + "@akrogdev"
+  end %>
+  <%= link_to "https://github.com/gorka", class: "m-2 social-btn bg-[#181717]" do
+    svg("github", class: "fill-white w-5 h-5 mr-3") + "gorka"
   end %>
 </div>
