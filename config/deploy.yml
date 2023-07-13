@@ -1,0 +1,60 @@
+service: akrog
+image: gorka/akrog
+
+servers:
+  web:
+    hosts:
+      - akrog.dev
+    labels:
+      traefik.http.routers.akrog.rule: Host(`akrog.dev`)
+      traefik.http.routers.akrog_secure.entrypoints: websecure
+      traefik.http.routers.akrog_secure.rule: Host(`akrog.dev`)
+      traefik.http.routers.akrog_secure.tls: true
+      traefik.http.routers.akrog_secure.tls.certresolver: letsencrypt
+
+traefik:
+  options:
+    publish:
+      - "443:443"
+    volume:
+      - "/letsencrypt/acme.json:/letsencrypt/acme.json"
+  args:
+    entryPoints.web.address: ":80"
+    entryPoints.websecure.address: ":443"
+    entryPoints.web.http.redirections.entryPoint.to: websecure
+    entryPoints.web.http.redirections.entryPoint.scheme: https
+    entryPoints.web.http.redirections.entrypoint.permanent: true
+    certificatesResolvers.letsencrypt.acme.email: "gorka@akrog.dev"
+    certificatesResolvers.letsencrypt.acme.storage: "/letsencrypt/acme.json"
+    certificatesResolvers.letsencrypt.acme.httpchallenge: true
+    certificatesResolvers.letsencrypt.acme.httpchallenge.entrypoint: web
+
+registry:
+  server: ghcr.io
+  username: gorka
+  password:
+    - MRSK_REGISTRY_PASSWORD
+
+env:
+  clear:
+    RAILS_LOG_TO_STDOUT: 1
+    RAILS_SERVE_STATIC_FILES: true
+    DB_HOST: akrog.dev
+  secret:
+    - RAILS_MASTER_KEY
+    - POSTGRES_USER
+    - POSTGRES_DB
+    - POSTGRES_PASSWORD
+
+accessories:
+  db:
+    image: postgres:15
+    host: akrog.dev
+    port: 5432
+    env:
+      secret:
+        - POSTGRES_USER
+        - POSTGRES_DB
+        - POSTGRES_PASSWORD
+    directories:
+      - data:/var/lib/postgresql/data
