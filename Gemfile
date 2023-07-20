@@ -72,6 +72,9 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
   gem "webdrivers"
+  gem "webmock", "~> 3.18"
 end
 
 gem "mrsk", "~> 0.14.0"
+gem "faraday", "~> 2.7"
+
