@@ -18,5 +18,10 @@ module Akrog
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+    
+    config.url = "https://akrog.dev"
+
+    # IndieWeb
+    config.token_endpoint = "https://tokens.indieauth.com/token"
   end
 end
