@@ -2,6 +2,12 @@
 <html>
   <head>
     <title>Akrog</title>
+    <link rel="authorization_endpoint" href="<%= Rails.configuration.authorization_endpoint %>" />
+    <link rel="token_endpoint" href="<%= Rails.configuration.token_endpoint %>" />
+    <link rel="micropub" href="<%= micropub_url %>" />
+    <link rel="me" href="mailto:gorka@akrog.dev" />
+    <link rel="me" href="https://twitter.com/akrogdev" />
+
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
