@@ -1,6 +1,8 @@
 class MicropubController < ApplicationController
   include Micropub::Authenticate
 
+  skip_forgery_protection
+
   JSON_TYPES = {
     "h-entry": :entry
   }

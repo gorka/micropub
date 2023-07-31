@@ -1,6 +1,6 @@
 class EntriesController < ApplicationController
   def index
-    @entries = Entry.all
+    @entries = Entry.order(published_at: :desc)
   end
 
   def show
