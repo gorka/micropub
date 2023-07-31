@@ -9,7 +9,7 @@ class MicropubController < ApplicationController
     item = parse_json
 
     if item.save
-      head 201, location: entry_url(item)
+      head :created, location: entry_url(item)
     else
       render json: { errors: "to-do" }, status: :unprocessable_entity
     end

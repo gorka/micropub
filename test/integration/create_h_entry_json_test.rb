@@ -1,6 +1,6 @@
 require "test_helper"
 
-class HEntryJsonTest < ActionDispatch::IntegrationTest
+class CreateHEntryJsonTest < ActionDispatch::IntegrationTest
   # Tests based on https://micropub.rocks/server-tests/
 
   setup do
