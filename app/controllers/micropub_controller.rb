@@ -3,10 +3,7 @@ class MicropubController < ApplicationController
 
   skip_forgery_protection
 
-  JSON_TYPES = {
-    "h-entry": :entry
-  }
-
+  SUPPORTED_MICROFORMATS = %i[ entry ]
   MICROPUB_ACTIONS = %i[ create update delete ]
   UPDATE_ACTIONS = %i[ replace add delete ]
 
@@ -17,21 +14,18 @@ class MicropubController < ApplicationController
   }
 
   def create
-    if !JSON_TYPES.values.include?(microformat_type)
+    if !SUPPORTED_MICROFORMATS.include?(microformat_type) ||
+       !MICROPUB_ACTIONS.include?(micropub_action)
       head :bad_request
       return
     end
 
     case request.content_type
     when /application\/x-www-form-urlencoded/
-      action_form_encoded_create
+      send("action_form_encoded_#{micropub_action}")
     when /multipart\/form-data/
       action_form_encoded_multipart_create
     when /application\/json/
-      if !MICROPUB_ACTIONS.include?(micropub_action)
-        head :bad_request
-        return
-      end
       send("action_#{micropub_action}")
     else
       head :bad_request
@@ -41,41 +35,29 @@ class MicropubController < ApplicationController
   private
 
     def micropub_params
-      request.params[:micropub]
+      request.request_parameters.dig(:micropub) ||
+      request.request_parameters
     end
 
-    def micropub_action
+    def micropub_action      
       if micropub_params.key?(:action)
-        action_name = micropub_params[:action].to_sym
-
-        if MICROPUB_ACTIONS.include?(action_name)
-          return action_name
-        else
-          return nil
-        end
+        return micropub_params.dig(:action).to_sym
       end
 
       :create
     end
 
     def microformat_type
-      type_data = request.params[:type] || request.params[:h]
+      type = micropub_params.dig(:type)&.first || micropub_params.dig(:h)
 
-      if !type_data
-        return :entry
-      end
+      return :entry if !type
 
-      case type_data
-      when Array
-        return JSON_TYPES[type_data.first.to_sym]
-      when String
-        return request.params[:h].to_sym
-      end
+      type.sub("h-", "").to_sym
     end
 
     def parse_json(properties)
       case microformat_type
-      when JSON_TYPES[:"h-entry"]
+      when :entry
         create_entry(properties)
       end
     end
@@ -259,6 +241,10 @@ class MicropubController < ApplicationController
       end
 
       action_create(entry_properties)
+    end
+
+    def action_form_encoded_delete
+      action_delete
     end
 
     def action_form_encoded_multipart_create
