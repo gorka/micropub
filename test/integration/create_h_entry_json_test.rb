@@ -32,7 +32,7 @@ class CreateHEntryJsonTest < ActionDispatch::IntegrationTest
 
     post micropub_url, headers: headers, params: json_data
 
-    assert_response 201 || 202
+    assert_response 201
     assert_includes response.headers, "Location"
 
     get response.headers["Location"]
@@ -58,7 +58,7 @@ class CreateHEntryJsonTest < ActionDispatch::IntegrationTest
 
     post micropub_url, headers: headers, params: json_data
 
-    assert_response 201 || 202
+    assert_response 201
     assert_includes response.headers, "Location"
 
     get response.headers["Location"]
@@ -87,7 +87,7 @@ class CreateHEntryJsonTest < ActionDispatch::IntegrationTest
 
     post micropub_url, headers: headers, params: json_data
 
-    assert_response 201 || 202
+    assert_response 201
     assert_includes response.headers, "Location"
 
     get response.headers["Location"]
@@ -113,7 +113,7 @@ class CreateHEntryJsonTest < ActionDispatch::IntegrationTest
 
     post micropub_url, headers: headers, params: json_data
 
-    assert_response 201 || 202
+    assert_response 201
     assert_includes response.headers, "Location"
 
     get response.headers["Location"]
@@ -149,7 +149,7 @@ class CreateHEntryJsonTest < ActionDispatch::IntegrationTest
 
     post micropub_url, headers: headers, params: json_data
 
-    assert_response 201 || 202
+    assert_response 201
     assert_includes response.headers, "Location"
 
     get response.headers["Location"]
@@ -179,7 +179,7 @@ class CreateHEntryJsonTest < ActionDispatch::IntegrationTest
 
     post micropub_url, headers: headers, params: json_data
 
-    assert_response 201 || 202
+    assert_response 201
     assert_includes response.headers, "Location"
 
     get response.headers["Location"]

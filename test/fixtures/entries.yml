@@ -1,0 +1,16 @@
+with_category:
+  name: "This is an entry with one category"
+  content: "This is an entry with one category"
+  categories: "test1"
+  published_at: <%= Time.now %>
+
+with_categories:
+  name: "This is an entry"
+  content: "This is the content"
+  categories: "test1, test2"
+  published_at: <%= Time.now %>
+
+without_categories:
+  name: "This is a post without categories"
+  content: "This is a post without categories"
+  published_at: <%= Time.now %>

@@ -1,5 +1,5 @@
 class Entry < ApplicationRecord
-  has_many :photos
+  has_many :photos, dependent: :destroy
 
   accepts_nested_attributes_for :photos
 
