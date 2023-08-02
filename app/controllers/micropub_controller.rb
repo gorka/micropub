@@ -17,12 +17,25 @@ class MicropubController < ApplicationController
   }
 
   def create
-    if !MICROPUB_ACTIONS.include?(micropub_action)
+    if !JSON_TYPES.values.include?(microformat_type)
       head :bad_request
       return
     end
 
-    send("action_#{micropub_action}")
+    case request.content_type
+    when /application\/x-www-form-urlencoded/
+      action_form_encoded_create
+    when /multipart\/form-data/
+      action_form_encoded_multipart_create
+    when /application\/json/
+      if !MICROPUB_ACTIONS.include?(micropub_action)
+        head :bad_request
+        return
+      end
+      send("action_#{micropub_action}")
+    else
+      head :bad_request
+    end
   end
 
   private
@@ -45,19 +58,25 @@ class MicropubController < ApplicationController
       :create
     end
 
-    def microformat_type(type_array)
-      JSON_TYPES[type_array.first.to_sym]
+    def microformat_type
+      type_data = request.params[:type] || request.params[:h]
+
+      if !type_data
+        return :entry
+      end
+
+      case type_data
+      when Array
+        return JSON_TYPES[type_data.first.to_sym]
+      when String
+        return request.params[:h].to_sym
+      end
     end
 
-    def parse_json
-      type = microformat_type(request.params[:type])
-      properties = request.params[:properties]
-
-      case type
+    def parse_json(properties)
+      case microformat_type
       when JSON_TYPES[:"h-entry"]
         create_entry(properties)
-      else
-        puts "- unknown type"
       end
     end
 
@@ -72,7 +91,7 @@ class MicropubController < ApplicationController
       Entry.new(data)
     end
 
-    # property parsers
+    # json property parsers
 
     def entry_category(properties)
       properties[:category]&.join(", ")
@@ -94,8 +113,14 @@ class MicropubController < ApplicationController
       return [] unless photos.present?
 
       photos.reduce([]) do |acc, curr|
-        if curr.is_a?(String)
+        case curr
+        when String
           acc << { src: curr }
+        when ActionDispatch::Http::UploadedFile
+          acc << {
+            src: "-",
+            file: curr
+          }
         else
           acc << {
             src: curr[:value],
@@ -107,10 +132,10 @@ class MicropubController < ApplicationController
       end
     end
 
-    # actions
+    # json actions
 
-    def action_create
-      item = parse_json
+    def action_create(properties = nil)
+      item = parse_json(properties || request.params[:properties])
 
       if item.save
         head :created, location: entry_url(item)
@@ -219,5 +244,24 @@ class MicropubController < ApplicationController
       klass = url_parts.first.classify.constantize
       klass_id = url_parts.second
       klass.find(klass_id)
+    end
+
+    # form-encoded actions
+
+    def action_form_encoded_create(multipart_data = nil)
+      properties = multipart_data || params
+      entry_properties = properties.select { |key, _| ENTRY_PROPERTIES.keys.include?(key.to_sym) }
+
+      entry_properties.keys.each do |key|
+        if !entry_properties[key].is_a?(Array)
+          entry_properties[key] = [entry_properties[key]]
+        end
+      end
+
+      action_create(entry_properties)
+    end
+
+    def action_form_encoded_multipart_create
+      action_form_encoded_create(params)
     end
 end

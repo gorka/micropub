@@ -3,7 +3,7 @@
     <time datetime="<%= @entry.published_at %>" class="dt-published"><%= l(@entry.published_at) %></time>
   </p>
   <% @entry.photos.each do |photo| %>
-    <%= image_tag(photo.src, alt: photo.alt, class: "u-photo") %>
+    <%= image_tag(photo.url, alt: photo.alt, class: "u-photo") %>
   <% end %>
   <div class="e-content">
     <%= @entry.content.html_safe %>
