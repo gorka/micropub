@@ -23,7 +23,7 @@ module Micropub::Authenticate
 
   def authenticate
     if !access_token && !http_token
-      raise :unauthorized
+      raise Unauthorized
     end
 
     if access_token && http_token
