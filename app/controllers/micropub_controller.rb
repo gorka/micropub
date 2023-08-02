@@ -6,12 +6,23 @@ class MicropubController < ApplicationController
   SUPPORTED_MICROFORMATS = %i[ entry ]
   MICROPUB_ACTIONS = %i[ create update delete ]
   UPDATE_ACTIONS = %i[ replace add delete ]
+  SUPPORTED_QUERIES = %i[ config source syndicate_to ]
 
   ENTRY_PROPERTIES = {
     category: :categories,
     content: :content,
     photo: :photos
   }
+
+  def index
+    if !params[:q].present? || 
+       !SUPPORTED_QUERIES.include?(params[:q].underscore.to_sym)
+      head :bad_request
+      return
+    end
+
+    send("query_#{params[:q].underscore}")
+  end
 
   def create
     if !SUPPORTED_MICROFORMATS.include?(microformat_type) ||
@@ -221,13 +232,6 @@ class MicropubController < ApplicationController
       end
     end
 
-    def resource_from_url(url)
-      url_parts = URI::parse(url).path.split("/").compact_blank
-      klass = url_parts.first.classify.constantize
-      klass_id = url_parts.second
-      klass.find(klass_id)
-    end
-
     # form-encoded actions
 
     def action_form_encoded_create(multipart_data = nil)
@@ -249,5 +253,65 @@ class MicropubController < ApplicationController
 
     def action_form_encoded_multipart_create
       action_form_encoded_create(params)
+    end
+
+    # query
+
+    def query_config
+      data = {
+        "syndicate-to": []
+      }
+
+      render json: data.to_json, status: :ok
+    end
+
+    def query_syndicate_to
+      data = {
+        "syndicate-to": []
+      }
+
+      render json: data.to_json, status: :ok
+    end
+
+    def query_source
+      if !params[:url].present?
+        head :bad_request
+        return
+      end
+
+      resource = resource_from_url(params[:url])
+
+      data = {
+        properties: {}
+      }
+
+      if params[:properties].blank?
+        data[:type] = [ "h-entry" ]
+      end
+
+      properties = params[:properties]&.map(&:to_sym) || []
+
+      if properties.include?(:content) || params[:properties].blank?
+        data[:properties][:content] = [ resource.content ]
+      end
+
+      if properties.include?(:category) || params[:properties].blank?
+        data[:properties][:category] = resource.categories.split(",").map(&:strip)
+      end
+
+      if properties.include?(:photo) || params[:properties].blank?
+        data[:properties][:photo] = resource.photos.map(&:url)
+      end
+
+      render json: data.to_json, status: :ok
+    end
+
+    # utils
+
+    def resource_from_url(url)
+      url_parts = URI::parse(url).path.split("/").compact_blank
+      klass = url_parts.first.classify.constantize
+      klass_id = url_parts.second
+      klass.find(klass_id)
     end
 end
