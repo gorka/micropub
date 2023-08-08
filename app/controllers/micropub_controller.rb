@@ -7,6 +7,7 @@ class MicropubController < ApplicationController
   MICROPUB_ACTIONS = %i[ create update delete ]
   UPDATE_ACTIONS = %i[ replace add delete ]
   SUPPORTED_QUERIES = %i[ config source syndicate_to ]
+  SUPPORTED_MEDIA_TYPES = [ "image/jpeg", "image/png", "image/gif" ]
 
   ENTRY_PROPERTIES = {
     category: :categories,
@@ -40,6 +41,27 @@ class MicropubController < ApplicationController
       send("action_#{micropub_action}")
     else
       head :bad_request
+    end
+  end
+
+  def media
+    if !params[:file].present? ||
+       !SUPPORTED_MEDIA_TYPES.include?(params[:file].content_type)
+      return :bad_request
+    end
+
+    photo = Photo.new({
+      src: "-",
+      file: params[:file]
+    })
+
+    if photo.save
+      head :created, location: url_for(photo.file)
+    else
+      puts "-" * 100
+      p photo.errors.full_messages
+      puts "-" * 100
+      render json: { errors: "to-do" }, status: :unprocessable_entity
     end
   end
 
@@ -259,6 +281,7 @@ class MicropubController < ApplicationController
 
     def query_config
       data = {
+        "media-endpoint": micropub_media_url,
         "syndicate-to": []
       }
 
