@@ -1,0 +1,16 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  category: one
+  categorizable: with_category
+  categorizable_type: Entry
+
+two:
+  category: one
+  categorizable: with_categories
+  categorizable_type: Entry
+
+three:
+  category: two
+  categorizable: with_categories
+  categorizable_type: Entry

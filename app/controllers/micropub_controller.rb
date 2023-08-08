@@ -99,7 +99,7 @@ class MicropubController < ApplicationController
       data = {
         published_at: Time.now,
         content: entry_content(properties),
-        categories: entry_category(properties),
+        categorizations_attributes: entry_category(properties),
         photos_attributes: entry_photo(properties)
       }
 
@@ -109,7 +109,15 @@ class MicropubController < ApplicationController
     # json property parsers
 
     def entry_category(properties)
-      properties[:category]&.join(", ")
+      categories = properties[:category]
+
+      return [] if !categories.present? || categories.empty?
+
+      categories.map do |category|
+        {
+          category_attributes: { name: category }
+        }
+      end
     end
 
     def entry_content(properties)
@@ -219,12 +227,7 @@ class MicropubController < ApplicationController
       properties[property] = value
 
       if property == :category
-        current_categories = current_value.present? ? current_value.split(",").map(&:strip) : []
-        new_params = {
-          categories: current_categories.concat(value).join(", ")
-        }
-
-        resource.update!(new_params) if new_params.present?
+        value.each { |category| resource.categories.find_or_create_by(name: category) }
       end
 
       if property == :photo
@@ -238,19 +241,13 @@ class MicropubController < ApplicationController
       current_value = resource.send(ENTRY_PROPERTIES[property])
 
       if property == :category
-        current_categories = current_value.present? ? current_value.split(",").map(&:strip) : []
-        
-        new_params = {
-          categories: (current_categories - value).join(", ")
-        }
-
-        resource.update!(new_params) if new_params.present?
+        resource.categories.where(name: value).destroy_all
       end
     end
 
     def update_delete_array(resource, property)
       if property == :category
-        resource.update!({ categories: nil })
+        resource.categories.destroy_all
       end
     end
 
@@ -319,7 +316,7 @@ class MicropubController < ApplicationController
       end
 
       if properties.include?(:category) || params[:properties].blank?
-        data[:properties][:category] = resource.categories.split(",").map(&:strip)
+        data[:properties][:category] = resource.categories.map(&:name)
       end
 
       if properties.include?(:photo) || params[:properties].blank?

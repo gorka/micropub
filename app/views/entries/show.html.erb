@@ -8,10 +8,10 @@
   <div class="e-content">
     <%= @entry.content.html_safe %>
   </div>
-  <% if @entry.splitted_categories.any? %>
+  <% if @entry.categories.any? %>
     <div class="">
-      <% @entry.splitted_categories.each do |category| %>
-        <span class="p-category"><%= category %></span>
+      <% @entry.categories.each do |category| %>
+        <span class="p-category"><%= category.name %></span>
       <% end %>
     </div>
   <% end %>

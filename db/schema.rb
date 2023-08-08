@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_08_02_034639) do
+ActiveRecord::Schema[7.0].define(version: 2023_08_08_213642) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -42,12 +42,27 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_02_034639) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "categories", force: :cascade do |t|
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "categorizations", force: :cascade do |t|
+    t.bigint "category_id", null: false
+    t.string "categorizable_type", null: false
+    t.bigint "categorizable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["categorizable_type", "categorizable_id"], name: "index_categorizations_on_categorizable"
+    t.index ["category_id"], name: "index_categorizations_on_category_id"
+  end
+
   create_table "entries", force: :cascade do |t|
     t.string "name"
     t.string "summary"
     t.text "content", null: false
     t.datetime "published_at"
-    t.string "categories"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -63,5 +78,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_02_034639) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "categorizations", "categories"
   add_foreign_key "photos", "entries"
 end
