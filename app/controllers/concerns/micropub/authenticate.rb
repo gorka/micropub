@@ -3,6 +3,8 @@ require "active_support/concern"
 module Micropub::Authenticate
   extend ActiveSupport::Concern
 
+  class Unauthorized < StandardError; end
+
   included do
     before_action :authenticate
   end
@@ -21,8 +23,7 @@ module Micropub::Authenticate
 
   def authenticate
     if !access_token && !http_token
-      head :unauthorized
-      return
+      raise Unauthorized
     end
 
     if access_token && http_token
@@ -45,6 +46,6 @@ module Micropub::Authenticate
       end
     end
 
-    head :unauthorized
+    raise Unauthorized
   end
 end
