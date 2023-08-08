@@ -1,5 +1,5 @@
 class Photo < ApplicationRecord
-  belongs_to :entry
+  belongs_to :entry, optional: true
 
   has_one_attached :file
 
@@ -7,7 +7,7 @@ class Photo < ApplicationRecord
 
   def url
     if file.attached?
-      return Rails.application.routes.url_helpers.rails_blob_url(file, only_path: true)
+      return Rails.application.routes.url_helpers.rails_blob_url(file, host: Rails.configuration.url)
     end
 
     src
