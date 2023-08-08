@@ -3,12 +3,11 @@ class MicropubController < ApplicationController
 
   skip_forgery_protection
 
-  JSON_TYPES = {
-    "h-entry": :entry
-  }
-
+  SUPPORTED_MICROFORMATS = %i[ entry ]
   MICROPUB_ACTIONS = %i[ create update delete ]
   UPDATE_ACTIONS = %i[ replace add delete ]
+  SUPPORTED_QUERIES = %i[ config source syndicate_to ]
+  SUPPORTED_MEDIA_TYPES = [ "image/jpeg", "image/png", "image/gif" ]
 
   ENTRY_PROPERTIES = {
     category: :categories,
@@ -16,48 +15,83 @@ class MicropubController < ApplicationController
     photo: :photos
   }
 
-  def create
-    if !MICROPUB_ACTIONS.include?(micropub_action)
+  def index
+    if !params[:q].present? || 
+       !SUPPORTED_QUERIES.include?(params[:q].underscore.to_sym)
       head :bad_request
       return
     end
 
-    send("action_#{micropub_action}")
+    send("query_#{params[:q].underscore}")
+  end
+
+  def create
+    if !SUPPORTED_MICROFORMATS.include?(microformat_type) ||
+       !MICROPUB_ACTIONS.include?(micropub_action)
+      head :bad_request
+      return
+    end
+
+    case request.content_type
+    when /application\/x-www-form-urlencoded/
+      send("action_form_encoded_#{micropub_action}")
+    when /multipart\/form-data/
+      action_form_encoded_multipart_create
+    when /application\/json/
+      send("action_#{micropub_action}")
+    else
+      head :bad_request
+    end
+  end
+
+  def media
+    if !params[:file].present? ||
+       !SUPPORTED_MEDIA_TYPES.include?(params[:file].content_type)
+      return :bad_request
+    end
+
+    photo = Photo.new({
+      src: "-",
+      file: params[:file]
+    })
+
+    if photo.save
+      head :created, location: url_for(photo.file)
+    else
+      puts "-" * 100
+      p photo.errors.full_messages
+      puts "-" * 100
+      render json: { errors: "to-do" }, status: :unprocessable_entity
+    end
   end
 
   private
 
     def micropub_params
-      request.params[:micropub]
+      request.request_parameters.dig(:micropub) ||
+      request.request_parameters
     end
 
-    def micropub_action
+    def micropub_action      
       if micropub_params.key?(:action)
-        action_name = micropub_params[:action].to_sym
-
-        if MICROPUB_ACTIONS.include?(action_name)
-          return action_name
-        else
-          return nil
-        end
+        return micropub_params.dig(:action).to_sym
       end
 
       :create
     end
 
-    def microformat_type(type_array)
-      JSON_TYPES[type_array.first.to_sym]
+    def microformat_type
+      type = micropub_params.dig(:type)&.first || micropub_params.dig(:h)
+
+      return :entry if !type
+
+      type.sub("h-", "").to_sym
     end
 
-    def parse_json
-      type = microformat_type(request.params[:type])
-      properties = request.params[:properties]
-
-      case type
-      when JSON_TYPES[:"h-entry"]
+    def parse_json(properties)
+      case microformat_type
+      when :entry
         create_entry(properties)
-      else
-        puts "- unknown type"
       end
     end
 
@@ -72,7 +106,7 @@ class MicropubController < ApplicationController
       Entry.new(data)
     end
 
-    # property parsers
+    # json property parsers
 
     def entry_category(properties)
       properties[:category]&.join(", ")
@@ -94,8 +128,14 @@ class MicropubController < ApplicationController
       return [] unless photos.present?
 
       photos.reduce([]) do |acc, curr|
-        if curr.is_a?(String)
+        case curr
+        when String
           acc << { src: curr }
+        when ActionDispatch::Http::UploadedFile
+          acc << {
+            src: "-",
+            file: curr
+          }
         else
           acc << {
             src: curr[:value],
@@ -107,10 +147,10 @@ class MicropubController < ApplicationController
       end
     end
 
-    # actions
+    # json actions
 
-    def action_create
-      item = parse_json
+    def action_create(properties = nil)
+      item = parse_json(properties || request.params[:properties])
 
       if item.save
         head :created, location: entry_url(item)
@@ -213,6 +253,83 @@ class MicropubController < ApplicationController
         resource.update!({ categories: nil })
       end
     end
+
+    # form-encoded actions
+
+    def action_form_encoded_create(multipart_data = nil)
+      properties = multipart_data || params
+      entry_properties = properties.select { |key, _| ENTRY_PROPERTIES.keys.include?(key.to_sym) }
+
+      entry_properties.keys.each do |key|
+        if !entry_properties[key].is_a?(Array)
+          entry_properties[key] = [entry_properties[key]]
+        end
+      end
+
+      action_create(entry_properties)
+    end
+
+    def action_form_encoded_delete
+      action_delete
+    end
+
+    def action_form_encoded_multipart_create
+      action_form_encoded_create(params)
+    end
+
+    # query
+
+    def query_config
+      data = {
+        "media-endpoint": micropub_media_url,
+        "syndicate-to": []
+      }
+
+      render json: data.to_json, status: :ok
+    end
+
+    def query_syndicate_to
+      data = {
+        "syndicate-to": []
+      }
+
+      render json: data.to_json, status: :ok
+    end
+
+    def query_source
+      if !params[:url].present?
+        head :bad_request
+        return
+      end
+
+      resource = resource_from_url(params[:url])
+
+      data = {
+        properties: {}
+      }
+
+      if params[:properties].blank?
+        data[:type] = [ "h-entry" ]
+      end
+
+      properties = params[:properties]&.map(&:to_sym) || []
+
+      if properties.include?(:content) || params[:properties].blank?
+        data[:properties][:content] = [ resource.content ]
+      end
+
+      if properties.include?(:category) || params[:properties].blank?
+        data[:properties][:category] = resource.categories.split(",").map(&:strip)
+      end
+
+      if properties.include?(:photo) || params[:properties].blank?
+        data[:properties][:photo] = resource.photos.map(&:url)
+      end
+
+      render json: data.to_json, status: :ok
+    end
+
+    # utils
 
     def resource_from_url(url)
       url_parts = URI::parse(url).path.split("/").compact_blank
