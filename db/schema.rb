@@ -53,8 +53,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_02_034639) do
   end
 
   create_table "photos", force: :cascade do |t|
-    t.bigint "entry_id", null: false
-    t.string "src", null: false
+    t.bigint "entry_id"
+    t.string "src"
     t.string "alt"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
